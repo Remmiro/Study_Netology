@@ -1,10 +1,13 @@
 <?php
-// Запрос данных у пользователя (можно заменить на получение из формы или другого источника)
-$имя = isset($_POST['имя']) ? trim($_POST['имя']) : '';
-$фамилия = isset($_POST['фамилия']) ? trim($_POST['фамилия']) : '';
-$отчество = isset($_POST['отчество']) ? trim($_POST['отчество']) : '';
+// Объявляем функцию readLine только если она ещё не объявлена
+if (!function_exists('readLine')) {
+    function readLine($prompt) {
+        echo $prompt;
+        return trim(fgets(STDIN));
+    }
+}
 
-// Проверяем, существует ли функция mb_ucfirst, и объявляем её при необходимости
+// Функция для заглавной буквы с поддержкой многобайтовых символов
 if (!function_exists('mb_ucfirst')) {
     function mb_ucfirst($string, $encoding='UTF-8') {
         $firstChar = mb_substr($string, 0, 1, $encoding);
@@ -13,16 +16,24 @@ if (!function_exists('mb_ucfirst')) {
     }
 }
 
+// Запрос данных у пользователя
+$имя = readLine('Введите имя: ');
+$фамилия = readLine('Введите фамилию: ');
+$отчество = readLine('Введите отчество: ');
+
 // Формируем полное имя с заглавной буквы в начале каждого слова
 $fullName = mb_ucfirst($фамилия) . ' ' . mb_ucfirst($имя) . ' ' . mb_ucfirst($отчество);
 
 // Получаем инициалы (первая буква каждого имени с точкой)
-$initials = '';
+$surnameInitials = '';
+if ($фамилия !== '') {
+    $surnameInitials .= mb_ucfirst($фамилия);
+}
 if ($имя !== '') {
-    $initials .= mb_strtoupper(mb_substr($имя, 0, 1)) . '.';
+    $surnameInitials .= ' ' . mb_strtoupper(mb_substr($имя, 0, 1)) . '.';
 }
 if ($отчество !== '') {
-    $initials .= mb_strtoupper(mb_substr($отчество, 0, 1)) . '.';
+    $surnameInitials .= ' ' . mb_strtoupper(mb_substr($отчество, 0, 1)) . '.';
 }
 
 // Формируем строку "Фамилия И.О."
@@ -40,7 +51,7 @@ if ($отчество !== '') {
 }
 
 // Вывод результатов
-echo "Полное имя: " . htmlspecialchars($fullName) . "<br>";
-echo "Фамилия и инициалы: " . htmlspecialchars($surnameAndInitials) . "<br>";
-echo "Аббревиатура: " . htmlspecialchars($fio);
+echo "Полное имя: " . $fullName . PHP_EOL;
+echo "Фамилия и инициалы: " . $surnameAndInitials . PHP_EOL;
+echo "Аббревиатура: " . $fio . PHP_EOL;
 ?>
