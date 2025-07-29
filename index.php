@@ -1,57 +1,129 @@
 <?php
-// Объявляем функцию readLine только если она ещё не объявлена
-if (!function_exists('readLine')) {
-    function readLine($prompt) {
-        echo $prompt;
-        return trim(fgets(STDIN));
+// Убираем declare(strict_types=1);
+
+// Объявляем константы
+const OPERATION_EXIT = 0;
+const OPERATION_ADD = 1;
+const OPERATION_DELETE = 2;
+const OPERATION_PRINT = 3;
+
+// Массив описаний операций
+$operations = [
+    OPERATION_EXIT => OPERATION_EXIT . '. Завершить программу.',
+    OPERATION_ADD => OPERATION_ADD . '. Добавить товар в список покупок.',
+    OPERATION_DELETE => OPERATION_DELETE . '. Удалить товар из списка покупок.',
+    OPERATION_PRINT => OPERATION_PRINT . '. Отобразить список покупок.',
+];
+
+$items = array();
+
+/**
+ * Выводит текущий список покупок.
+ */
+function displayItems($items) {
+    if (count($items) > 0) {
+        echo 'Ваш список покупок:' . PHP_EOL;
+        echo implode("\n", $items) . PHP_EOL;
+        echo 'Всего ' . count($items) . ' позиций.' . PHP_EOL;
+    } else {
+        echo 'Ваш список покупок пуст.' . PHP_EOL;
     }
 }
 
-// Функция для заглавной буквы с поддержкой многобайтовых символов
-if (!function_exists('mb_ucfirst')) {
-    function mb_ucfirst($string, $encoding='UTF-8') {
-        $firstChar = mb_substr($string, 0, 1, $encoding);
-        $then = mb_substr($string, 1, null, $encoding);
-        return mb_strtoupper($firstChar, $encoding) . $then;
+/**
+ * Запрашивает у пользователя операцию и возвращает её номер.
+ */
+function getOperationNumber($operations, $items) {
+    do {
+        system('clear'); // или system('cls') на Windows
+        displayItems($items);
+        echo 'Выберите операцию для выполнения:' . PHP_EOL;
+        foreach ($operations as $key => $desc) {
+            echo "$key. $desc" . PHP_EOL;
+        }
+        echo '> ';
+        $input = trim(fgets(STDIN));
+        if (isset($operations[$input])) {
+            return (int)$input;
+        } else {
+            echo 'Некорректный ввод. Попробуйте снова.' . PHP_EOL;
+        }
+    } while (true);
+}
+
+/**
+ * Обработка добавления товара.
+ */
+function addItem(&$items) {
+    echo "Введите название товара для добавления:\n> ";
+    $name = trim(fgets(STDIN));
+    if ($name !== '') {
+        $items[] = $name;
+        echo "Товар '$name' добавлен.\n";
+    } else {
+        echo "Пустое название. Товар не добавлен.\n";
     }
 }
 
-// Запрос данных у пользователя
-$имя = readLine('Введите имя: ');
-$фамилия = readLine('Введите фамилию: ');
-$отчество = readLine('Введите отчество: ');
-
-// Формируем полное имя с заглавной буквы в начале каждого слова
-$fullName = mb_ucfirst($фамилия) . ' ' . mb_ucfirst($имя) . ' ' . mb_ucfirst($отчество);
-
-// Получаем инициалы (первая буква каждого имени с точкой)
-$surnameInitials = '';
-if ($фамилия !== '') {
-    $surnameInitials .= mb_ucfirst($фамилия);
-}
-if ($имя !== '') {
-    $surnameInitials .= ' ' . mb_strtoupper(mb_substr($имя, 0, 1)) . '.';
-}
-if ($отчество !== '') {
-    $surnameInitials .= ' ' . mb_strtoupper(mb_substr($отчество, 0, 1)) . '.';
-}
-
-// Формируем строку "Фамилия И.О."
-$surnameAndInitials = mb_ucfirst($фамилия) . ' ' .
-                        (mb_strlen($имя) > 0 ? mb_strtoupper(mb_substr($имя, 0, 1)) . '.' : '') .
-                        (mb_strlen($отчество) > 0 ? mb_strtoupper(mb_substr($отчество, 0, 1)) . '.' : '');
-
-// Формируем аббревиатуру из первых букв ФИО
-$fio = '';
-if ($имя !== '') {
-    $fio .= mb_strtoupper(mb_substr($имя, 0, 1));
-}
-if ($отчество !== '') {
-    $fio .= mb_strtoupper(mb_substr($отчество, 0, 1));
+/**
+ * Обработка удаления товара.
+ */
+function deleteItem(&$items) {
+    if (count($items) === 0) {
+        echo "Список пуст. Удалять нечего.\n";
+        return;
+    }
+    displayItems($items);
+    echo "Введите название товара для удаления:\n> ";
+    $name = trim(fgets(STDIN));
+    if (($key = array_search($name, $items)) !== false) {
+        unset($items[$key]);
+        $items = array_values($items);
+        echo "Товар '$name' удален.\n";
+    } else {
+        echo "Товар '$name' не найден.\n";
+    }
 }
 
-// Вывод результатов
-echo "Полное имя: " . $fullName . PHP_EOL;
-echo "Фамилия и инициалы: " . $surnameAndInitials . PHP_EOL;
-echo "Аббревиатура: " . $fio . PHP_EOL;
-?>
+/**
+ * Выводит список покупок.
+ */
+function printItems($items) {
+    displayItems($items);
+    echo "Нажмите Enter для продолжения...";
+    fgets(STDIN);
+}
+
+// Основной цикл
+do {
+    $operationNumber = getOperationNumber($operations, $items);
+
+    echo 'Выбрана операция: '  . (isset($operations[$operationNumber]) ? $operations[$operationNumber] : '') . PHP_EOL;
+
+    switch ($operationNumber) {
+        case OPERATION_ADD:
+            addItem($items);
+            break;
+
+        case OPERATION_DELETE:
+            deleteItem($items);
+            break;
+
+        case OPERATION_PRINT:
+            printItems($items);
+            break;
+
+        case OPERATION_EXIT:
+            // Выход из цикла
+            break;
+
+        default:
+            // Не должно произойти
+            break;
+    }
+
+    echo "\n ----- \n";
+
+} while ($operationNumber != OPERATION_EXIT);
+
+echo 'Программа завершена' . PHP_EOL;
